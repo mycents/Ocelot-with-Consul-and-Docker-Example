@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+  consul:
+    image: consul:1.15.4
+    command: consul agent -dev -log-level=warn -ui -client=0.0.0.0
+    hostname: consul
+    #container_name: consul.local
+
+  gateway-api:
+    image: ${DOCKER_REGISTRY-}gatewayapi
+    build:
+      context: .
+      dockerfile: Gateway.Api/Dockerfile
+    depends_on:
+      - consul
+
+  catalogs-api:
+    image: ${DOCKER_REGISTRY-}catalogsapi
+    build:
+      context: .
+      dockerfile: Catalogs.Api/Dockerfile
+    depends_on:
+      - consul
+
+  deliveries-api:
+    image: ${DOCKER_REGISTRY-}deliveriesapi
+    build:
+      context: .
+      dockerfile: Deliveries.Api/Dockerfile
+    depends_on:
+      - consul
+
+  orders-api:
+    image: ${DOCKER_REGISTRY-}ordersapi
+    build:
+      context: .
+      dockerfile: Orders.Api/Dockerfile
+    depends_on:
+      - consul
+
+  payments-api:
+    image: ${DOCKER_REGISTRY-}paymentsapi
+    build:
+      context: .
+      dockerfile: Payments.Api/Dockerfile
+    depends_on:
+      - consul
+
+  stock-api:
+    image: ${DOCKER_REGISTRY-}stockapi
+    build:
+      context: .
+      dockerfile: Stock.Api/Dockerfile
+    depends_on:
+      - consul

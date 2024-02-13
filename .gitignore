@@ -1,0 +1,18 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/bin/Debug
+/Catalogs.Api/bin/Debug/net8.0
+/Catalogs.Api/obj
+/Deliveries.Api/bin/Debug/net8.0
+/Deliveries.Api/obj
+/Gateway.Api/obj
+/Infra.Shared/obj
+/obj/Debug
+/Orders.Api/obj
+/Payment.Api/obj
+/Payments.Api/obj
+/Stock.Api/obj
+/obj/Docker

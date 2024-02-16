@@ -5,13 +5,22 @@ services:
     image: consul:1.15.4
     command: consul agent -dev -log-level=warn -ui -client=0.0.0.0
     hostname: consul
-    #container_name: consul.local
-
+    ports:
+      - "8500:8500"  
+  
   gateway-api:
     image: ${DOCKER_REGISTRY-}gatewayapi
     build:
       context: .
       dockerfile: Gateway.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul1:8500
+      - ServiceConfig__serviceAddress=http://gateway-api:8080
+      - ServiceConfig__serviceName=gateway
+    ports:
+      - "8080"      
     depends_on:
       - consul
 
@@ -20,6 +29,16 @@ services:
     build:
       context: .
       dockerfile: Catalogs.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
+      - ServiceConfig__serviceAddress=http://catalogs-api:8080
+      - ServiceConfig__serviceName=catalogs
+    deploy:
+      replicas: 3
+    ports:
+      - "8080"      
     depends_on:
       - consul
 
@@ -28,6 +47,16 @@ services:
     build:
       context: .
       dockerfile: Deliveries.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
+      - ServiceConfig__serviceAddress=http://deliveries-api:8080
+      - ServiceConfig__serviceName=deliveries
+    deploy:
+      replicas: 3
+    ports:
+      - "8080"      
     depends_on:
       - consul
 
@@ -36,6 +65,16 @@ services:
     build:
       context: .
       dockerfile: Orders.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
+      - ServiceConfig__serviceAddress=http://orders-api:8080
+      - ServiceConfig__serviceName=orders
+    deploy:
+      replicas: 3
+    ports:
+      - "8080"      
     depends_on:
       - consul
 
@@ -44,6 +83,16 @@ services:
     build:
       context: .
       dockerfile: Payments.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
+      - ServiceConfig__serviceAddress=http://payments-api:8080
+      - ServiceConfig__serviceName=payments
+    deploy:
+      replicas: 3
+    ports:
+      - "8080"      
     depends_on:
       - consul
 
@@ -52,5 +101,15 @@ services:
     build:
       context: .
       dockerfile: Stock.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
+      - ServiceConfig__serviceAddress=http://stock-api:8080
+      - ServiceConfig__serviceName=stock
+    deploy:
+      replicas: 3
+    ports:
+      - "8080"      
     depends_on:
-      - consul
+      - consul 

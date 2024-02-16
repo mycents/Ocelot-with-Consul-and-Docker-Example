@@ -16,7 +16,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ServiceConfig__serviceDiscoveryAddress=http://consul1:8500
+      - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
       - ServiceConfig__serviceAddress=http://gateway-api:8080
       - ServiceConfig__serviceName=gateway
     ports:

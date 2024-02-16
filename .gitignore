@@ -16,3 +16,8 @@
 /Payments.Api/obj
 /Stock.Api/obj
 /obj/Docker
+/Gateway.Api/bin/Debug/net8.0
+/Infra.Shared/bin/Debug/netstandard2.1
+/Orders.Api/bin/Debug/net8.0
+/Payments.Api/bin/Debug/net8.0
+/Stock.Api/bin/Debug/net8.0

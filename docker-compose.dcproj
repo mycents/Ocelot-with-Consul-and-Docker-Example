@@ -13,4 +13,8 @@
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include=".env" />
+    <Content Include="consul-config.json" />
+  </ItemGroup>
 </Project>

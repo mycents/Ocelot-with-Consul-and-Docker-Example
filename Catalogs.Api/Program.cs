@@ -14,6 +14,6 @@ var app = builder.Build();
 
 app.MapHealthChecks("_healthcheck/status");
 
-app.MapGet("/", () => "Hello World - catalogs!");
+app.MapGet("/hello", () => "Hello World - catalogs!");
 
 app.Run();

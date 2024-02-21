@@ -1,6 +1,18 @@
 {
   "Routes": [
     {
+      "DownstreamPathTemplate": "/todos/1",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "jsonplaceholder.typicode.com",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/test",
+      "UpstreamHttpMethod": ["Get"]
+    },
+    {
       "DownstreamPathTemplate": "/{everything}",
       "DownstreamScheme": "http",
       "UpstreamPathTemplate": "/api/orders/{everything}",

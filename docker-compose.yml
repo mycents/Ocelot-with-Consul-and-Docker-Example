@@ -1,28 +1,95 @@
-version: '3.4'
+version: '3.8'
 
+networks:
+  consul-network:
+    driver: bridge
+    
 services:
+  traefik:
+    image: traefik:v2.4
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      #- "--entrypoints.web.address=:80"
+
+      # - --providers.consulCatalog=true
+      # - --providers.consulCatalog.endpoint.address=http://consul:8500 
+ 
+      - "--entrypoints.consul-entry.address=:7000"   # 1.1 Consul) - Configura porta interna `7000` como ponto de entrada para `consul-entry`
+      - "--entrypoints.ocelot-entry.address=:4000"   # 2.1 Ocelot) - Configura porta interna `7000` como ponto de entrada para `consul-entry` 
+      - "--log.level=`DEBUG`"
+    ports:
+      #- "80:80"
+      - "8080:8080"
+      - "8500:7000"                                  # 1.2 Consul) - Configura a porta 8500 externa e interna 7000
+      - "4000:4000"                                  # 2.2 Ocelot) - Configura a porta 4000 externa e interna 4000
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - consul-network
+  
+  consul-0:
+    image: consul:1.15.4
+    container_name: consul-0
+    #hostname: consul-servers
+    command: agent -server -ui -client 0.0.0.0 -bootstrap-expect=3 -log-level=DEBUG
+    environment:
+      CONSUL_BIND_INTERFACE: 'eth0'
+#    volumes:
+#      - ./consul-config.json:/consul/config/consul-config.json
+    networks:
+      - consul-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.consul.entrypoints=consul-entry"               # 1.3 Consul - Configura 'consul-entry' como entrada para router `consul`
+      - "traefik.http.routers.consul.rule=Host(`localhost`)"
+      #- "traefik.http.routers.consul.rule=Host(`consul-server`)"
+      - "traefik.http.services.consul.loadbalancer.server.port=8500"         # 1.4 Consul - Configura o serviço de balanceamento de 'consul' para porta 8500      
+  
   consul:
     image: consul:1.15.4
-    command: consul agent -dev -log-level=warn -ui -client=0.0.0.0
-    hostname: consul
-    ports:
-      - "8500:8500"  
+    command: agent -server -ui -client 0.0.0.0 -retry-join=consul-0 -log-level=DEBUG
+    #hostname: consul-servers
+    deploy:
+      replicas: 4
+    environment:
+      CONSUL_BIND_INTERFACE: 'eth0'
+#    volumes:
+#      - ./consul-config.json:/consul/config/consul-config.json
+    networks:
+      - consul-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.consul.rule=Host(`localhost`)"
+      #- "traefik.http.routers.consul.rule=Host(`consul-server`)"
+      - "traefik.http.services.consul.loadbalancer.server.port=8500"
+      - "traefik.http.routers.consul.entrypoints=consul-entry"
+    depends_on:
+      - consul-0
   
   gateway-api:
     image: ${DOCKER_REGISTRY-}gatewayapi
     build:
       context: .
       dockerfile: Gateway.Api/Dockerfile
+    deploy:
+      replicas: 3
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=4000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://gateway-api:8080
-      - ServiceConfig__serviceName=gateway
-    ports:
-      - "8080"      
+      - ServiceConfig__serviceAddress=http://gateway-api:4000
+      - ServiceConfig__serviceName=ocelot 
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ocelot.entrypoints=ocelot-entry"                        # 2.3 Ocelot - Configura 'ocelot-entry' como entrada para router `ocelot`
+      - "traefik.http.routers.ocelot.rule=Host(`localhost`)" # && PathPrefix(`/api`)
+      - "traefik.http.services.ocelot.loadbalancer.server.port=4000"                  # 1.4 Ocelot - Configura o serviço de balanceamento de 'ocelot' para porta 4000
+    networks:
+      - consul-network 
     depends_on:
-      - consul
+      - traefik
 
   catalogs-api:
     image: ${DOCKER_REGISTRY-}catalogsapi
@@ -31,14 +98,14 @@ services:
       dockerfile: Catalogs.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=5000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://catalogs-api:8080
+      - ServiceConfig__serviceAddress=http://catalogs-api:5000
       - ServiceConfig__serviceName=catalogs
     deploy:
       replicas: 3
-    ports:
-      - "8080"      
+    networks:
+      - consul-network 
     depends_on:
       - consul
 
@@ -49,14 +116,14 @@ services:
       dockerfile: Deliveries.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=5000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://deliveries-api:8080
+      - ServiceConfig__serviceAddress=http://deliveries-api:5000
       - ServiceConfig__serviceName=deliveries
     deploy:
       replicas: 3
-    ports:
-      - "8080"      
+    networks:
+      - consul-network 
     depends_on:
       - consul
 
@@ -67,14 +134,14 @@ services:
       dockerfile: Orders.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=5000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://orders-api:8080
+      - ServiceConfig__serviceAddress=http://orders-api:5000
       - ServiceConfig__serviceName=orders
     deploy:
       replicas: 3
-    ports:
-      - "8080"      
+    networks:
+      - consul-network 
     depends_on:
       - consul
 
@@ -85,14 +152,14 @@ services:
       dockerfile: Payments.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=5000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://payments-api:8080
+      - ServiceConfig__serviceAddress=http://payments-api:5000
       - ServiceConfig__serviceName=payments
     deploy:
       replicas: 3
-    ports:
-      - "8080"      
+    networks:
+      - consul-network      
     depends_on:
       - consul
 
@@ -103,13 +170,13 @@ services:
       dockerfile: Stock.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTP_PORTS=5000
       - ServiceConfig__serviceDiscoveryAddress=http://consul:8500
-      - ServiceConfig__serviceAddress=http://stock-api:8080
+      - ServiceConfig__serviceAddress=http://stock-api:5000
       - ServiceConfig__serviceName=stock
     deploy:
       replicas: 3
-    ports:
-      - "8080"      
+    networks:
+      - consul-network      
     depends_on:
       - consul 
